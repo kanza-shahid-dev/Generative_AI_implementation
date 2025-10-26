@@ -53,7 +53,6 @@ export default function Home() {
       });
 
       if (!response.ok) return;
-
       const result = await response.json();
 
       // Add bot message
