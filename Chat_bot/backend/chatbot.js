@@ -1,24 +1,30 @@
 import "dotenv/config";
 import Groq from "groq-sdk";
 import { tavily } from "@tavily/core";
+import readline from "node:readline/promises";
 
 const qroq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-async function main() {
+export async function generate(userMessage) {
   const messages = [
     {
       role: "system",
       content: `If the user asks about current, trending, latest or real-time information,
-      ALWAYS call the function "webSearch". Otherwise, answer normally.`,
-    },
-    {
-      role: "user",
-      content: "Tell about latest iphone", //Current weather in Islamabad
+      ALWAYS call the function "webSearch". Otherwise, answer normally, 
+      If the user asks for:
+      - current date
+      - current time
+      - today date
+      - now
+      → You MUST answer directly using the system clock below (DO NOT call webSearch).
+      current date and time is ${new Date().toUTCString()}`,
     },
   ];
 
+  messages.push({ role: "user", content: userMessage });
   while (true) {
+    //LLM //Tool calling loop
     const completions = await qroq.chat.completions.create({
       temperature: 0,
       model: "llama-3.3-70b-versatile",
@@ -51,8 +57,11 @@ async function main() {
 
     const toolCalls = completions.choices[0].message.tool_calls;
     if (!toolCalls) {
-      console.log("Response from AI", completions.choices[0].message.content);
-      break;
+      console.log(
+        `\n ----------- Response from AI --------- \n`,
+        completions.choices[0].message.content
+      );
+      return completions.choices[0].message.content;
     }
     for (const toolCall of toolCalls) {
       const functionName = toolCall.function.name;
@@ -60,7 +69,7 @@ async function main() {
 
       if (functionName === "webSearch") {
         const toolResponse = await webSearch(JSON.parse(functionArgs));
-        console.log("Tool response:", toolResponse);
+        //console.log("Tool response:", toolResponse);
 
         messages.push({
           role: "tool",
@@ -72,8 +81,6 @@ async function main() {
     }
   }
 }
-
-main();
 
 async function webSearch({ query }) {
   console.log("calling web search");
