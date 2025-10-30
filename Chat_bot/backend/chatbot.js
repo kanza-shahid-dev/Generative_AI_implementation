@@ -1,26 +1,37 @@
 import "dotenv/config";
 import Groq from "groq-sdk";
 import { tavily } from "@tavily/core";
-import readline from "node:readline/promises";
+import NodeCache from "node-cache";
 
 const qroq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const tvly = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-export async function generate(userMessage) {
-  const messages = [
+const cache = new NodeCache({ stdTTL: 60 * 60 * 24 }); // means time to clear data // set to 24 hours means it will clear only msgs that are passed 24 hours // default 0 means unlimited do not clear
+
+// {
+//   userid: [messages];
+// }
+export async function generate(userMessage, threadId) {
+  const baseMessages = [
     {
       role: "system",
       content: `If the user asks about current, trending, latest or real-time information,
-      ALWAYS call the function "webSearch". Otherwise, answer normally, 
-      If the user asks for:
-      - current date
-      - current time
-      - today date
-      - now
-      → You MUST answer directly using the system clock below (DO NOT call webSearch).
-      current date and time is ${new Date().toUTCString()}`,
+                ALWAYS call the function "webSearch". Otherwise, answer normally.
+                You have access to following tool:
+                webSearch(query:string):use this to search for current or unknown information.
+                but do not mention the tool.
+                If the user asks for:
+                - current date
+                - current time
+                - today date
+                - now
+                → You MUST answer directly using the system clock below (DO NOT call webSearch).
+                current date and time is ${new Date().toUTCString()}`,
     },
   ];
+
+  const messages = cache.get(threadId);
+  if (!messages) return baseMessages;
 
   messages.push({ role: "user", content: userMessage });
   while (true) {
@@ -57,10 +68,12 @@ export async function generate(userMessage) {
 
     const toolCalls = completions.choices[0].message.tool_calls;
     if (!toolCalls) {
+      //here we end the chatbot response
       console.log(
         `\n ----------- Response from AI --------- \n`,
         completions.choices[0].message.content
       );
+      cache.set(threadId, messages);
       return completions.choices[0].message.content;
     }
     for (const toolCall of toolCalls) {

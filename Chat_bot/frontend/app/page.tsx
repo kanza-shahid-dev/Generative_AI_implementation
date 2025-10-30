@@ -1,17 +1,32 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 
 export default function Home() {
-  type Message = { id: number; type: "user" | "bot"; content: string };
+  type Message = {
+    id: number;
+    type: "user" | "bot";
+    content: string;
+  };
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const threadId = uuidv4();
 
   useEffect(() => {
     // Focus textarea after messages update (when not loading)
     if (!isLoading) {
       textareaRef.current?.focus();
     }
+  }, [messages, isLoading]);
+
+  // Auto-scroll to bottom when messages change or loading state changes
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
   }, [messages, isLoading]);
 
   const handleKeyDown = (event: any) => {
@@ -49,7 +64,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message: inputText }),
+        body: JSON.stringify({ threadId: threadId, message: inputText }),
       });
 
       if (!response.ok) return;
@@ -87,7 +102,9 @@ export default function Home() {
             </div>
           ))}
           {isLoading && (
-            <div className="my-4 ml-auto max-w-fit">Thinking...</div>
+            <div className="animate-pulse my-4 mr-auto max-w-fit">
+              Thinking...
+            </div>
           )}
         </div>
 
