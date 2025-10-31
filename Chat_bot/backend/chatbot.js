@@ -34,7 +34,15 @@ export async function generate(userMessage, threadId) {
   if (!messages) return baseMessages;
 
   messages.push({ role: "user", content: userMessage });
+
+  const MAX_RETRIES = 10;
+  let count = 0;
+
   while (true) {
+    if (count > MAX_RETRIES) {
+      return "I could not find the result, Please try something else";
+    }
+    count++;
     //LLM //Tool calling loop
     const completions = await qroq.chat.completions.create({
       temperature: 0,
