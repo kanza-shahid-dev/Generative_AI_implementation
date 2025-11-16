@@ -20,6 +20,6 @@ Large Language Model invocation and integration toolkit including:
 
 ## 🛠️ Technologies Used
 
-- **Generative AI Models** - Various LLM implementations
+- **Generative AI Models** - LLM implementations
 - **Backend** - Node.js , Express.js
 - **Frontend** - Next.js
