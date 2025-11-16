@@ -11,6 +11,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const threadId = uuidv4();
 
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function Home() {
               Thinking...
             </div>
           )}
+          <div ref={messagesEndRef}></div>
         </div>
 
         <div className="fixed inset-x-0 bottom-0 flex items-center justify-center bg-neutral-950">
